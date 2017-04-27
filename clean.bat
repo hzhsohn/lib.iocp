@@ -16,6 +16,7 @@ del "test\*.sdf" /a
 del "test\*.user"
 rd "test\debug" /s/q
 rd "test\Release" /s/q
+rd "test\ipch" /s/q
 
 rem "清理已编译项"
 

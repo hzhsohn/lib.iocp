@@ -27,7 +27,7 @@ DLLEXPORT_API BOOL WINAPI IocpNetInit(IOCPNET_RECV_DATA_CALLBACK pfnRecvDataCall
 											IOCPNET_DISCONNECT_CALLBACK pfnDisconnectCallback, 
 											IOCPNET_ACCEPT_CALLBACK pfnAcceptCallback, 
 											WORD wPort=0);
-DLLEXPORT_API BOOL WINAPI IocpNetSend(HANDLE handle, int nLen, char* pData);
+DLLEXPORT_API int WINAPI IocpNetSend(HANDLE handle, int nLen, char* pData);
 
 DLLEXPORT_API char* WINAPI IocpNetGetIp(char*host,char*ip);//域名获取IP
 DLLEXPORT_API HANDLE WINAPI IocpNetConnect(char* pszIP, WORD wPort, int nTimeOut=5000);//默认5秒

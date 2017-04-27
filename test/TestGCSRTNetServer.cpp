@@ -44,7 +44,7 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	IocpNetBegin();
 	_tprintf(_T("The application is server.\n"));
-	if(!IocpNetInit(RecvDataCallBack,DissconnectCallBack,AcceptCallBack, 8888))
+	if(!IocpNetInit(RecvDataCallBack,DissconnectCallBack,AcceptCallBack, 9100))
 	{
 		_tprintf(_T("IocpNetInit failed as server.\n"));
 		getchar();
@@ -94,7 +94,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	IocpNetEnd();
 	*/
-
+	
 
 	return 0;
 }

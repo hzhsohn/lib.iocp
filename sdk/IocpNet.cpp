@@ -243,8 +243,7 @@ DLLEXPORT_API BOOL WINAPI IocpNetDisconnect(HANDLE handle)
 	return TRUE;
 }
 
-
-BOOL WINAPI IocpNetSend(HANDLE handle, int nLen, char* pData)
+DLLEXPORT_API int WINAPI IocpNetSend(HANDLE handle, int nLen, char* pData)
 {
 	IocpNetSockMgr* pSockMgr = GetSocketMgr(handle);
 	if(pSockMgr == NULL)
@@ -253,7 +252,7 @@ BOOL WINAPI IocpNetSend(HANDLE handle, int nLen, char* pData)
 	return pSockMgr->SendPacket(handle, nLen, pData);
 }
 
-char* WINAPI IocpNetGetPeerIP(HANDLE handle, char* pszIp)
+DLLEXPORT_API char* WINAPI IocpNetGetPeerIP(HANDLE handle, char* pszIp)
 {
 	IocpNetSockMgr* pSockMgr = GetSocketMgr(handle);
 	if(pSockMgr == NULL)
@@ -262,7 +261,7 @@ char* WINAPI IocpNetGetPeerIP(HANDLE handle, char* pszIp)
 	return pSockMgr->GetPeerIP(handle, pszIp);
 }
 
-WORD WINAPI IocpNetGetPeerPort(HANDLE handle)
+DLLEXPORT_API WORD WINAPI IocpNetGetPeerPort(HANDLE handle)
 {
 	IocpNetSockMgr* pSockMgr = GetSocketMgr(handle);
 	if(pSockMgr == NULL)

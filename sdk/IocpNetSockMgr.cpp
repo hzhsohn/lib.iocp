@@ -309,7 +309,7 @@ BOOL IocpNetSockMgr::DeleteSock(HANDLE handle)
 	return TRUE;
 }
 
-BOOL IocpNetSockMgr::SendPacket(HANDLE handle, int nLen, char* pData)
+int IocpNetSockMgr::SendPacket(HANDLE handle, int nLen, char* pData)
 {
 	int nRet;
 	DWORD dwSendBufferlen;
@@ -318,7 +318,7 @@ BOOL IocpNetSockMgr::SendPacket(HANDLE handle, int nLen, char* pData)
 	if(nLen < 0 || nLen > PACKET_LENGTH)
 	{
 		//GCH_ETRACE(_T("IocpNetSockMgr::SendPacket , nLen==%d"), nLen);
-		return FALSE;
+		return -1;
 	}	
 
 	EnterCriticalSection(&m_cs);
@@ -326,7 +326,7 @@ BOOL IocpNetSockMgr::SendPacket(HANDLE handle, int nLen, char* pData)
 	if(!IocpNetSockMgr::IsValidSock(pSockInfo) || pSockInfo->s == 0)
 	{
 		LeaveCriticalSection(&m_cs);
-		return FALSE;
+		return -1;
 	}
 	
 	GCSTS_Base_Overlapped *pOverlapped =  NewOverlapped(pSockInfo);
@@ -334,7 +334,7 @@ BOOL IocpNetSockMgr::SendPacket(HANDLE handle, int nLen, char* pData)
 	{
 		CloseSocket(pSockInfo);
 		LeaveCriticalSection(&m_cs);
-		return FALSE;
+		return -1;
 	}
 	pOverlapped->dwOperatCode = GCE_Operate_Send;
 		
@@ -356,12 +356,12 @@ BOOL IocpNetSockMgr::SendPacket(HANDLE handle, int nLen, char* pData)
 			//	dwErr, pSockInfo, pSockInfo->s, pOverlapped, pOverlapped->wLeft);
 			CloseSocket(pSockInfo);
 			LeaveCriticalSection(&m_cs);
-			return FALSE;
+			return -1;
 		}
 	}
 
 	LeaveCriticalSection(&m_cs);
-	return TRUE;
+	return dwSendBufferlen;
 }
 BOOL IocpNetSockMgr::SetOutDat(HANDLE handle, INT_PTR pData, BYTE yDataType)
 {

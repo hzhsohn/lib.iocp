@@ -92,7 +92,7 @@ public:
 	BOOL DeleteSock(HANDLE handle);
 
 	BOOL RecvDataPart(HANDLE handle, DWORD dwBytesTransferred, GCSTS_Base_Overlapped *pOverlapped, int nOpCode, BOOL bClose=TRUE);
-	BOOL SendPacket(HANDLE handle, int nLen, char* pData);
+	int SendPacket(HANDLE handle, int nLen, char* pData);
 	BOOL SetOutDat(HANDLE handle, INT_PTR pData, BYTE yDataType);
 	INT_PTR GetOutDat(HANDLE handle, BYTE& yDataType);
 	char* GetPeerIP(HANDLE handle, char* pszIp);
