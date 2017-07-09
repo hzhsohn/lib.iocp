@@ -116,8 +116,9 @@ template<typename Type> Type* CMemMgr<Type>::MyNew()
 	pType = (Type*)m_lstFreeMem.front();
 	m_lstFreeMem.pop_front();		
 
-	int nIndex = (ULONG)pType%MAX_HASH_INDEX;
-	m_mapMemMgr[nIndex][(ULONG_PTR)pType] = 1;
+	unsigned int nIndex = (ULONG)pType%MAX_HASH_INDEX;
+	
+	m_mapMemMgr[nIndex].insert(make_pair((ULONG_PTR)pType,1)); 
 
 	m_szUseMemCnt++;
 	return pType;

@@ -3,4 +3,5 @@
 @cls
 
 devenv "sdk\IocpNet.vcxproj" /build debug
-devenv "test\TestGCSRTNetServer.vcxproj" /build debug
+devenv "test_serv\TestGCSRTNetServer.vcxproj" /build debug
+devenv "test_client\TestGCSRTNetServer.vcxproj" /build debug

@@ -254,6 +254,8 @@ DLLEXPORT_API int WINAPI IocpNetSend(HANDLE handle, int nLen, char* pData)
 
 DLLEXPORT_API char* WINAPI IocpNetGetPeerIP(HANDLE handle, char* pszIp)
 {
+	if(pszIp)
+	{pszIp[0]=0;}
 	IocpNetSockMgr* pSockMgr = GetSocketMgr(handle);
 	if(pSockMgr == NULL)
 		return NULL;

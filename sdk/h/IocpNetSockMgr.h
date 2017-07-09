@@ -8,11 +8,11 @@
 using namespace std;
 
 
-#define PACKET_LENGTH			10240						//每次发包的最大长度，不包括包头
+#define PACKET_LENGTH			2048						//每次发包的最大长度，不包括包头
 
 
 //最多管理的连接数，应该从配制文件中读取，同时也是最大动态内存数
-#define GCHMAC_FREE_SOCK_COUNT			2000
+#define GCHMAC_FREE_SOCK_COUNT			10000
 #define GCHMAC_MAX_SOCK_COUNT			20000
 
 //最大接收缓冲区，应该和允许的最大连接数一至

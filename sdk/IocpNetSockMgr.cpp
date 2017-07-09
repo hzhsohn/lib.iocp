@@ -86,6 +86,7 @@ void IocpNetSockMgr::DelOverlapped(HANDLE h, GCSTS_Base_Overlapped * pOverLapped
 }
 GCSTS_Base_Overlapped * IocpNetSockMgr::NewOverlapped(GCSTS_Sock_Info * pSockInfo)
 {
+	EnterCriticalSection(&m_cs);
 	GCSTS_Base_Overlapped *pOverlapped =  m_memOverlapped.MyNew();
 	////GCH_KTRACE("IocpNetSockMgr::NewOverlapped pSockInfo=%p, pOverLapped=%p", pSockInfo, pOverlapped);
 	if(pSockInfo != NULL && pOverlapped != NULL)
@@ -93,7 +94,7 @@ GCSTS_Base_Overlapped * IocpNetSockMgr::NewOverlapped(GCSTS_Sock_Info * pSockInf
 
 	if(pOverlapped != NULL)
 		memset(pOverlapped, 0, sizeof(GCSTS_Base_Overlapped));
-	
+	LeaveCriticalSection(&m_cs);
 	return pOverlapped;
 }
 
@@ -107,10 +108,14 @@ GCSTS_Sock_Info * IocpNetSockMgr::NewSocket(SOCKET s, SOCKADDR* pAddr)
 		closesocket(s);
 		return NULL; 
 	}
+
+	EnterCriticalSection(&m_cs);
+
 	//GCH_KTRACE(_T("IocpNetSockMgr::NewSocket s=%d"), s);
 	pSockInfo = m_memSocket.MyNew();
 	if(pSockInfo == NULL)
 	{
+		LeaveCriticalSection(&m_cs);
 		return NULL;
 	}
 	//GCH_KTRACE("IocpNetSockMgr::NewSocket 1");
@@ -124,6 +129,7 @@ GCSTS_Sock_Info * IocpNetSockMgr::NewSocket(SOCKET s, SOCKADDR* pAddr)
 	{
 		m_memSocket.MyDel(pSockInfo);
 		closesocket(s);
+		LeaveCriticalSection(&m_cs);
 		return NULL;
 	}
 
@@ -134,6 +140,7 @@ GCSTS_Sock_Info * IocpNetSockMgr::NewSocket(SOCKET s, SOCKADDR* pAddr)
 	{
 		m_memSocket.MyDel(pSockInfo);
 		closesocket(s);
+		LeaveCriticalSection(&m_cs);
 		return NULL;
 	}
 	//GCH_KTRACE("IocpNetSockMgr::NewSocket 4");
@@ -142,15 +149,19 @@ GCSTS_Sock_Info * IocpNetSockMgr::NewSocket(SOCKET s, SOCKADDR* pAddr)
 	if(!AddSock(pSockInfo))
 	{
 		DeleteSock(pSockInfo);
+		LeaveCriticalSection(&m_cs);
 		return NULL;
 	}
 
 	//GCH_KTRACE("IocpNetSockMgr::NewSocket 5");
 	if(!RecvDataPart(pSockInfo, 0,pSockInfo->pRecvOverlapped, GCE_Operate_Recv, FALSE))
 	{
-		DeleteSock(pSockInfo);		
+		DeleteSock(pSockInfo);	
+		LeaveCriticalSection(&m_cs);
 		return NULL;
 	}
+
+	LeaveCriticalSection(&m_cs);
 
 	//GCH_KTRACE("IocpNetSockMgr::NewSocket 6");
 	return pSockInfo;
@@ -161,14 +172,13 @@ BOOL IocpNetSockMgr::RecvDataPart(HANDLE handle, DWORD dwBytesTransferred, GCSTS
 	int nRet;
 	DWORD dwFlags=0;
 	GCSTS_Sock_Info* pSockInfo = (GCSTS_Sock_Info*)handle;
-	EnterCriticalSection(&m_cs);
-
+	
 	if(!IocpNetSockMgr::IsValidSock(pSockInfo))
 	{
-		LeaveCriticalSection(&m_cs);
 		return FALSE;
 	}
 
+	EnterCriticalSection(&m_cs);
 	pOverlapped->dwOperatCode = nOpCode;
 	pOverlapped->wLeft = PACKET_LENGTH;
 	DWORD dwReceiveBytes = 0;
@@ -203,18 +213,18 @@ BOOL IocpNetSockMgr::IsExist(GCSTS_Sock_Info* pSockInfo)
 }
 BOOL IocpNetSockMgr::IsValidSock(GCSTS_Sock_Info* pSockInfo)
 {
-	if(pSockInfo == NULL)
+	EnterCriticalSection(&m_cs);
+	BOOL ret=FALSE;
+	if(pSockInfo)
 	{
-		return FALSE;
+		GCH_Map_PPoint_Ite pos = m_mapSocket.find((INT_PTR)pSockInfo);	
+		if(pos != m_mapSocket.end())
+		{
+			ret= pSockInfo->bActive;
+		}
 	}
-	
-	GCH_Map_PPoint_Ite pos = m_mapSocket.find((INT_PTR)pSockInfo);
-	
-	if(pos != m_mapSocket.end())
-	{
-		return pSockInfo->bActive;
-	}
-	return FALSE;	
+	LeaveCriticalSection(&m_cs);
+	return ret;	
 }
 
 BOOL IocpNetSockMgr::AddSock(GCSTS_Sock_Info* pSockInfo)
@@ -232,11 +242,12 @@ void IocpNetSockMgr::CloseSocket(HANDLE handle)
 {
 	//GCH_KTRACE(_T("IocpNetSockMgr::CloseSocket 1 handle=%p"), handle);
 	
-	EnterCriticalSection(&m_cs);
 	GCSTS_Sock_Info* pSockInfo = (GCSTS_Sock_Info*)handle;
 	//GCH_KTRACE(_T("IocpNetSockMgr::CloseSocket 2 handle=%p"), handle);
 	if(IsValidSock(pSockInfo))
 	{
+		
+		EnterCriticalSection(&m_cs);
 		//GCH_KTRACE(_T("IocpNetSockMgr::CloseSocket pSockInfo=%p, pSockInfo->s=%d"), pSockInfo, pSockInfo->s);
 
 		if(pSockInfo->pRecvOverlapped != NULL)
@@ -258,9 +269,10 @@ void IocpNetSockMgr::CloseSocket(HANDLE handle)
 
 		IocpNetDealQueMgr::InsertOtherData(pSockInfo, GCE_CLOSE_SOCKET);
 		SetEvent(m_hEvent);
+		LeaveCriticalSection(&m_cs);
 	}
 	//GCH_KTRACE(_T("IocpNetSockMgr::CloseSocket 3 handle=%p"), handle);
-	LeaveCriticalSection(&m_cs);
+	
 }
 BOOL IocpNetSockMgr::DeleteSock(HANDLE handle)
 {
@@ -319,16 +331,14 @@ int IocpNetSockMgr::SendPacket(HANDLE handle, int nLen, char* pData)
 	{
 		//GCH_ETRACE(_T("IocpNetSockMgr::SendPacket , nLen==%d"), nLen);
 		return -1;
-	}	
-
-	EnterCriticalSection(&m_cs);
+	}
 
 	if(!IocpNetSockMgr::IsValidSock(pSockInfo) || pSockInfo->s == 0)
 	{
-		LeaveCriticalSection(&m_cs);
 		return -1;
 	}
 	
+	EnterCriticalSection(&m_cs);
 	GCSTS_Base_Overlapped *pOverlapped =  NewOverlapped(pSockInfo);
 	if(pOverlapped == NULL)
 	{
@@ -405,16 +415,13 @@ char* IocpNetSockMgr::GetPeerIP(HANDLE handle, char* pszIp)
 	if(handle == NULL)
 		return 0;
 
-	EnterCriticalSection(&m_cs);
 	GCSTS_Sock_Info *pSockInfo = (GCSTS_Sock_Info*)handle;
 
 	if(IocpNetSockMgr::IsValidSock(pSockInfo))
 	{
 		strcpy(pszIp, pSockInfo->szIp);
-		LeaveCriticalSection(&m_cs);
 		return pszIp;
 	}
-	LeaveCriticalSection(&m_cs);
 	return NULL;
 
 }
@@ -427,12 +434,10 @@ WORD IocpNetSockMgr::GetPeerPort(HANDLE handle)
 
 	GCSTS_Sock_Info *pSockInfo = (GCSTS_Sock_Info*)handle;
 
-	EnterCriticalSection(&m_cs);
 	if(IocpNetSockMgr::IsValidSock(pSockInfo))
 	{
 		wPort = ntohs(pSockInfo->wPort);
 	}
-	LeaveCriticalSection(&m_cs);
 	return wPort;
 }
 BOOL IocpNetSockMgr::GetPeerAddress(HANDLE handle, char* pszIp, WORD& wPort)
@@ -442,13 +447,11 @@ BOOL IocpNetSockMgr::GetPeerAddress(HANDLE handle, char* pszIp, WORD& wPort)
 
 	GCSTS_Sock_Info *pSockInfo = (GCSTS_Sock_Info*)handle;
 
-	EnterCriticalSection(&m_cs);
 	if(IocpNetSockMgr::IsValidSock(pSockInfo))
 	{
 		wPort = ntohs(pSockInfo->wPort);
 		strcpy(pszIp, pSockInfo->szIp);
 	}
-	LeaveCriticalSection(&m_cs);
 	return TRUE;
 }
 void IocpNetSockMgr::OnCompleteEvent(DWORD dwBytesTransferred, HANDLE h, GCSTS_Base_Overlapped *pOverlapped)
@@ -456,16 +459,13 @@ void IocpNetSockMgr::OnCompleteEvent(DWORD dwBytesTransferred, HANDLE h, GCSTS_B
 	DWORD dwOperatCode = 0;
 	
 	GCSTS_Sock_Info *pSockInfo = (GCSTS_Sock_Info*)h;
-
-	EnterCriticalSection(&m_cs);
-	
-	
+		
 	if(!IocpNetSockMgr::IsValidSock(pSockInfo))
 	{
-		LeaveCriticalSection(&m_cs);
 		return;
 	}
-
+	
+	EnterCriticalSection(&m_cs);
 	if(pOverlapped != pSockInfo->pRecvOverlapped)
 	{
 		GCH_Lst_Point_Ite pos;
@@ -520,7 +520,6 @@ BOOL IocpNetSockMgr::RecvComplete(DWORD dwOperatCode, DWORD dwBytesTransferred, 
 	{
 		return FALSE;
 	}
-	
 	return TRUE;
 }
 DWORD WINAPI IocpNetSockMgr::WorkDealThread( void *pVoid) 
